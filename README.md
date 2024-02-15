@@ -22,20 +22,14 @@ LQER is a post-training-quantization method that
 
 ## Motivation of LQER </summary>
 
-LQER is a post-training-quantization method that reconstructs the quantization error, $E_q=W-W_q$, using low-rank approximation.
+- LQER is a post-training-quantization method that reconstructs the quantization error, $E_q=W-W_q$, using low-rank approximation.
 
-The core idea of LQER is finding an approximator, $\widetilde{E}_q$, to shape the singular values of $E_q$ towards a desirable distribution easy to approximate in low rank: $\widetilde{E}_q=A_kB_k$
+- The core idea of LQER is finding an approximator, $\widetilde{E}_q$, to **shape the singular values of $E_q$ towards a desirable distribution** easy to approximate in low rank: $\widetilde{E}_q=A_kB_k$
 
-<img src="./figures/s1-Eq-distribution-comparison.png"  height="270">
-
-<table>
-<tr></tr>
-<tr><th style="text-align: center;">Normalized singular value distribution</th><th style="text-align: center;">Compute pattern</th><th></th></tr>
-<tr><td style="text-align: center;"><img src="./figures/s1-Eq-distribution-comparison.png"  height="270"></td><td style="text-align: center;"><img src="./figures/s1-llm-int8-vs-lqer.svg"  height="270"></td><td></td></tr>
-</table>
-
-- $\text{LQER}$ denotes the singular values of $\mathrm{SVD}(E_q)$, and $\text{L}^2\text{QER}$ is our activation-induced approximator.
-- $\text{LQER}$ enjoys a static compute pattern without the need for scatter/gatter operations.
+| Normalized singular value distribution | Compute pattern |
+| :---: | :---: |
+| <img src="./figures/s1-Eq-distribution-comparison.png"  height="270"> | <img src="./figures/s1-llm-int8-vs-lqer.svg"  height="270"> |
+| $\text{LQER}$ denotes the singular values of $\mathrm{SVD}(E_q)$; <br>and $\text{L}^2\text{QER}$ is our activation-induced approximator. | $\text{LQER}$ enjoys a static compute pattern without the need for scatter/gatter operations. |
 
 ## Installation
 
