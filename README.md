@@ -74,3 +74,16 @@ For example, to replicate the W4A8 $\text{L}^2\text{QER}-\texttt{MXINT}$ on LLaM
 cd experiments/pipeline
 ./sweep_lqer_act.sh ../configs/template/llama-7b.toml my-llama-7b-tag
 ```
+
+---
+
+If you find this work helpful, please consider citing:
+
+```bibtex
+@article{zhang2024lqer,
+  title={LQER: Low-Rank Quantization Error Reconstruction for LLMs},
+  author={Zhang, Cheng and Cheng, Jianyi and Constantinides, George A and Zhao, Yiren},
+  journal={arXiv preprint arXiv:2402.02446},
+  year={2024}
+}
+```
