@@ -1,3 +1,3 @@
 from pathlib import Path
 
-SRC_PATH = Path(__file__).resolve().parents[1]
+LQER_PATH = Path(__file__).resolve().parent

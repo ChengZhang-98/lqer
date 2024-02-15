@@ -13,7 +13,7 @@ import datasets as hf_datasets
 from argparse import ArgumentParser
 from accelerate import infer_auto_device_map
 
-from .registry import SRC_PATH
+from .registry import LQER_PATH
 
 logger = logging.getLogger(__name__)
 
@@ -185,7 +185,7 @@ def override_args(config: dict, unknown_args: list[str]) -> tuple[dict, dict]:
 def get_project_path(config: dict, tags: list[str], action: str) -> Path:
     if "checkpoint_path" not in config:
         tag = "_".join(tags).replace("/", "-")
-        project_path = SRC_PATH.parent.joinpath(
+        project_path = LQER_PATH.parents[1].joinpath(
             "checkpoints", config["project"].replace("/", "-"), tag, action
         )
     else:
