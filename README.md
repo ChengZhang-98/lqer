@@ -20,8 +20,7 @@ LQER is a post-training-quantization method that
 - eliminates the needs of grid search, knowledge distillation, or other forms of iterative optimization.
 - achieves near-lossless W4A8 LLM PTQ while using 1.36 $\times$ hardware resources compared to SoTA methods.
 
-<details>
-<summary> Motivation of LQER </summary>
+## Motivation of LQER </summary>
 
 LQER is a post-training-quantization method that reconstructs the quantization error, $E_q=W-W_q$, using low-rank approximation.
 
@@ -37,8 +36,6 @@ The core idea of LQER is finding an approximator, $\widetilde{E}_q$, to shape th
 
 - $\text{LQER}$ denotes the singular values of $\mathrm{SVD}(E_q)$, and $\text{L}^2\text{QER}$ is our activation-induced approximator.
 - $\text{LQER}$ enjoys a static compute pattern without the need for scatter/gatter operations.
-
-</details>
 
 ## Installation
 
