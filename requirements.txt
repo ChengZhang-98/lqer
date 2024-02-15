@@ -1,0 +1,27 @@
+torch==2.2.0
+transformers==4.37.2
+colorlog
+wandb
+modin[ray]
+accelerate
+datasets
+toml
+tabulate
+ipdb
+pudb
+# lm-eval-harness
+einops
+jsonlines
+numexpr
+openai>=0.6.4
+omegaconf>=2.2
+peft>=0.2.0
+pybind11>=2.6.2
+pycountry
+pytablewriter
+rouge-score>=0.0.4
+sacrebleu==1.5.0
+scikit-learn>=0.24.1
+sqlitedict
+tqdm-multiprocess
+zstandard

@@ -1,0 +1,141 @@
+project="baseline_debug"
+enable_wandb=false
+enable_profiling=true
+enable_approximation=true
+enable_perplexity_evaluation=true
+enable_harness_downstream_evaluation=true
+tags=["W3", "A8", "weight-block-size_[1,32]", "baseline", "debug"]
+model_name="facebook/opt-125m"
+task="causal_lm"
+overwrite_checkpoint=true
+
+[wandb]
+    project="lqer-debug"
+    job_type="opt-125m"
+    tags=["opt-125m"]
+
+[evaluate]
+    disable_lqer=false
+    low_rank_dict="../../checkpoints/debug/opt-125m/approximate/low_rank_dict.pt"
+    [evaluate.perplexity]
+        dataset="wikitext2"
+        batch_size=2
+        num_workers=8
+    [evaluate.harness_downstream]
+        batch_size=16
+        datasets=["sst"] # ["lambada_openai"]
+
+[profile]
+    dataset="slim_pajama_6b"
+    max_length=2048
+    batch_size=2
+    num_samples=32
+    num_raw_samples=256
+    num_workers=8
+    scale_dict="../../checkpoints/debug/opt-125m/profile/scale_dict.pt"
+
+[approximate]
+    name="lqer-svd"
+    device="cuda"
+    chunk_size=16
+    chunk_idx=0
+    [approximate.lqer_sgd]
+        max_steps=100
+        learning_rate=1e-1
+        eta_min=1e-2
+        svd_method="pade"
+    [approximate.lqer_svd]
+    [approximate.lqer_act]
+    [approximate.approximator]
+        'model\.decoder\.layers\.[0-9]+\.self_attn\.(k|q|v|out)_proj\.weight'="default"
+        'model\.decoder\.layers\.[0-9]+\.(fc1|fc2)\.weight'="default"
+        [approximate.approximator.default]
+            rank=32
+            [approximate.approximator.default.W_quantizer]
+                name="block_fp"
+                width=4
+                exponent_width=8
+                exponent_bias="NA"
+                block_size=[1, 16]
+                skip_first_dim=false
+
+            [approximate.approximator.default.A_quantizer]
+                name="block_fp"
+                width=8
+                exponent_width=8
+                exponent_bias="NA"
+                block_size=[16, 1]
+                skip_first_dim=false
+
+            [approximate.approximator.default.B_quantizer]
+                name="block_fp"
+                width=8
+                exponent_width=8
+                exponent_bias="NA"
+                block_size=[16, 1]
+                skip_first_dim=false
+
+[l_config.linear]
+    rank=32
+
+[q_config.linear]
+    name="flexible_lqer"
+    is_ptq=true
+    default=false
+    [q_config.linear.x_quantizer]
+        name="block_fp"
+        width=8
+        exponent_width=8
+        exponent_bias="NA"
+        block_size=[1, 16]
+        skip_first_dim=true
+    [q_config.linear.w_quantizer]
+        name="block_fp"
+        width=4
+        exponent_width=8
+        exponent_bias="NA"
+        block_size=[1, 16]
+        skip_first_dim=false
+    [q_config.linear.b_quantizer]
+        name="block_fp"
+        width=8
+        exponent_width=8
+        exponent_bias="NA"
+        block_size=[1, 16]
+        skip_first_dim=false
+
+[q_config.bmm]
+    name="flexible"
+    default=false
+    [q_config.bmm.x_quantizer]
+        name="block_fp"
+        width=8
+        exponent_width=8
+        exponent_bias="NA"
+        block_size=[1, 16]
+        skip_first_dim=true
+    [q_config.bmm.w_quantizer]
+        name="block_fp"
+        width=8
+        exponent_width=8
+        exponent_bias="NA"
+        block_size=[1, 16]
+        skip_first_dim=true
+
+[q_config.matmul]
+    name="flexible"
+    default=false
+    [q_config.matmul.x_quantizer]
+        name="block_fp"
+        width=8
+        exponent_width=8
+        exponent_bias="NA"
+        block_size=[1, 16]
+        skip_first_dim=true
+    [q_config.matmul.w_quantizer]
+        name="block_fp"
+        width=8
+        exponent_width=8
+        exponent_bias="NA"
+        block_size=[1, 16]
+        skip_first_dim=true

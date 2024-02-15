@@ -1,0 +1,137 @@
+project="lqer_act_template"
+enable_wandb=false
+enable_profiling=true
+enable_approximation=true
+enable_perplexity_evaluation=true
+enable_harness_downstream_evaluation=true
+
+checkpoint_path="../../checkpoints/template/opt-1.3b"
+tags=["template"]
+model_name="facebook/opt-1.3b"
+
+[wandb]
+    project="lqer-act"
+    job_type="opt-1.3b"
+    tags=["opt-1.3b"]
+
+[evaluate]
+    disable_lqer=false
+    low_rank_dict="../../checkpoints/template/opt-1.3b/approximate/low_rank_dict.pt"
+    [evaluate.perplexity]
+        device_map=":ast:{'model.decoder.embed_tokens': 0, 'lm_head': 0, 'model.decoder.embed_positions': 0, 'model.decoder.final_layer_norm': 0, 'model.decoder.layers.0': 0, 'model.decoder.layers.1': 0, 'model.decoder.layers.2': 0, 'model.decoder.layers.3': 0, 'model.decoder.layers.4': 0, 'model.decoder.layers.5': 0, 'model.decoder.layers.6': 0, 'model.decoder.layers.7': 0, 'model.decoder.layers.8': 1, 'model.decoder.layers.9': 1, 'model.decoder.layers.10': 1, 'model.decoder.layers.11': 1, 'model.decoder.layers.12': 1, 'model.decoder.layers.13': 1, 'model.decoder.layers.14': 1, 'model.decoder.layers.15': 1, 'model.decoder.layers.16': 2, 'model.decoder.layers.17': 2, 'model.decoder.layers.18': 2, 'model.decoder.layers.19': 2, 'model.decoder.layers.20': 2, 'model.decoder.layers.21': 2, 'model.decoder.layers.22': 2, 'model.decoder.layers.23': 2}"
+        dataset="wikitext2"
+        batch_size=2
+        num_workers=8
+
+    [evaluate.harness_downstream]
+        device_map=":ast:{'model.decoder.embed_tokens': 0, 'lm_head': 0, 'model.decoder.embed_positions': 0, 'model.decoder.final_layer_norm': 0, 'model.decoder.layers.0': 0, 'model.decoder.layers.1': 0, 'model.decoder.layers.2': 0, 'model.decoder.layers.3': 0, 'model.decoder.layers.4': 0, 'model.decoder.layers.5': 0, 'model.decoder.layers.6': 0, 'model.decoder.layers.7': 0, 'model.decoder.layers.8': 1, 'model.decoder.layers.9': 1, 'model.decoder.layers.10': 1, 'model.decoder.layers.11': 1, 'model.decoder.layers.12': 1, 'model.decoder.layers.13': 1, 'model.decoder.layers.14': 1, 'model.decoder.layers.15': 1, 'model.decoder.layers.16': 2, 'model.decoder.layers.17': 2, 'model.decoder.layers.18': 2, 'model.decoder.layers.19': 2, 'model.decoder.layers.20': 2, 'model.decoder.layers.21': 2, 'model.decoder.layers.22': 2, 'model.decoder.layers.23': 2}"
+        datasets=["arc_easy", "copa", "lambada_openai", "piqa", "winogrande", "arc_challenge", "boolq", "openbookqa"]
+        # datasets=["lambada_openai", "arc_easy"]
+        batch_size=96
+
+[profile]
+    device_map=":ast:{'model.decoder.embed_tokens': 0, 'lm_head': 0, 'model.decoder.embed_positions': 0, 'model.decoder.final_layer_norm': 0, 'model.decoder.layers.0': 0, 'model.decoder.layers.1': 0, 'model.decoder.layers.2': 0, 'model.decoder.layers.3': 0, 'model.decoder.layers.4': 0, 'model.decoder.layers.5': 0, 'model.decoder.layers.6': 0, 'model.decoder.layers.7': 0, 'model.decoder.layers.8': 1, 'model.decoder.layers.9': 1, 'model.decoder.layers.10': 1, 'model.decoder.layers.11': 1, 'model.decoder.layers.12': 1, 'model.decoder.layers.13': 1, 'model.decoder.layers.14': 1, 'model.decoder.layers.15': 1, 'model.decoder.layers.16': 2, 'model.decoder.layers.17': 2, 'model.decoder.layers.18': 2, 'model.decoder.layers.19': 2, 'model.decoder.layers.20': 2, 'model.decoder.layers.21': 2, 'model.decoder.layers.22': 2, 'model.decoder.layers.23': 2}"
+    dataset="slim_pajama_6b"
+    max_length=2048
+    batch_size=2
+    num_workers=8
+    num_samples=64
+    num_raw_samples=256
+    scale_dict="../../checkpoints/template/opt-1.3b/profile/scale_dict.pt"
+
+[approximate]
+    name="lqer-act"
+    device="cuda"
+    chunk_size=16
+    chunk_idx=0
+    [approximate.lqer_svd]
+    [approximate.lqer_act]
+    [approximate.approximator]
+        'model\.decoder\.layers\.[0-9]+\.self_attn\.(k|q|v|out)_proj\.weight'="default"
+        'model\.decoder\.layers\.[0-9]+\.(fc1|fc2)\.weight'="default"
+        [approximate.approximator.default]
+            rank=1
+            [approximate.approximator.default.W_quantizer]
+                name="block_fp"
+                width=2
+                exponent_width=8
+                exponent_bias="NA"
+                block_size=[1, 32]
+                skip_first_dim=false
+            [approximate.approximator.default.A_quantizer]
+                name="block_fp"
+                width=8
+                exponent_width=8
+                exponent_bias="NA"
+                block_size=[16, 1]
+                skip_first_dim=false
+            [approximate.approximator.default.B_quantizer]
+                name="block_fp"
+                width=8
+                exponent_width=8
+                exponent_bias="NA"
+                block_size=[16, 1]
+                skip_first_dim=false
+
+[l_config.linear]
+    rank=1
+
+[q_config.linear]
+    name="flexible_lqer"
+    is_ptq=true
+    default=false
+    [q_config.linear.x_quantizer]
+        name="block_fp"
+        width=4
+        exponent_width=8
+        exponent_bias="NA"
+        block_size=[1, 16]
+        skip_first_dim=true
+    [q_config.linear.w_quantizer]
+        name="block_fp"
+        width=2
+        exponent_width=8
+        exponent_bias="NA"
+        block_size=[1, 32]
+        skip_first_dim=false
+    [q_config.linear.b_quantizer]
+        name="block_fp"
+        width=8
+        exponent_width=8
+        exponent_bias="NA"
+        block_size=[1, 16]
+        skip_first_dim=false
+[q_config.bmm]
+    name="flexible"
+    default=false
+    [q_config.bmm.x_quantizer]
+        name="block_fp"
+        width=8
+        exponent_width=8
+        exponent_bias="NA"
+        block_size=[1, 16]
+        skip_first_dim=true
+    [q_config.bmm.w_quantizer]
+        name="block_fp"
+        width=8
+        exponent_width=8
+        exponent_bias="NA"
+        block_size=[1, 16]
+        skip_first_dim=true
+[q_config.matmul]
+    name="flexible"
+    default=false
+    [q_config.matmul.x_quantizer]
+        name="block_fp"
+        width=8
+        exponent_width=8
+        exponent_bias="NA"
+        block_size=[1, 16]
+        skip_first_dim=true
+    [q_config.matmul.w_quantizer]
+        name="block_fp"
+        width=8
+        exponent_width=8
+        exponent_bias="NA"
+        block_size=[1, 16]
+        skip_first_dim=true

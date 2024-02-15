@@ -1,0 +1,7 @@
+name: lqer-baselines
+channels:
+  - defaults
+dependencies:
+  - pip=23.3.1
+  - python=3.11.7
+

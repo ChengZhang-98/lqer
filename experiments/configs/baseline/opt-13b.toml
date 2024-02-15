@@ -1,0 +1,26 @@
+project="template_baseline"
+enable_wandb=false
+enable_perplexity_evaluation=true
+enable_harness_downstream_evaluation=true
+tags=["template", "baseline"]
+model_name="facebook/opt-13b"
+task="causal_lm"
+overwrite_checkpoint=true
+
+[wandb]
+    project="lqer-baselines"
+    job_type="opt-13b"
+    tags=["opt-13b"]
+
+[evaluate]
+    evaluate_baseline=true
+    hf_quant_method="llm_int4"
+    device_map="{'model.decoder.embed_tokens': 0, 'lm_head': 0, 'model.decoder.embed_positions': 0, 'model.decoder.final_layer_norm': 0, 'model.decoder.layers.0': 0, 'model.decoder.layers.1': 0, 'model.decoder.layers.2': 0, 'model.decoder.layers.3': 0, 'model.decoder.layers.4': 0, 'model.decoder.layers.5': 0, 'model.decoder.layers.6': 0, 'model.decoder.layers.7': 0, 'model.decoder.layers.8': 0, 'model.decoder.layers.9': 0, 'model.decoder.layers.10': 0, 'model.decoder.layers.11': 0, 'model.decoder.layers.12': 0, 'model.decoder.layers.13': 1, 'model.decoder.layers.14': 1, 'model.decoder.layers.15': 1, 'model.decoder.layers.16': 1, 'model.decoder.layers.17': 1, 'model.decoder.layers.18': 1, 'model.decoder.layers.19': 1, 'model.decoder.layers.20': 1, 'model.decoder.layers.21': 1, 'model.decoder.layers.22': 1, 'model.decoder.layers.23': 1, 'model.decoder.layers.24': 1, 'model.decoder.layers.25': 1, 'model.decoder.layers.26': 2, 'model.decoder.layers.27': 2, 'model.decoder.layers.28': 2, 'model.decoder.layers.29': 2, 'model.decoder.layers.30': 2, 'model.decoder.layers.31': 2, 'model.decoder.layers.32': 2, 'model.decoder.layers.33': 2, 'model.decoder.layers.34': 2, 'model.decoder.layers.35': 2, 'model.decoder.layers.36': 2, 'model.decoder.layers.37': 2, 'model.decoder.layers.38': 2, 'model.decoder.layers.39': 2}"
+    [evaluate.perplexity]
+        dataset="wikitext2"
+        batch_size=2
+        num_workers=8
+    [evaluate.harness_downstream]
+        no_cache=true
+        datasets=["arc_easy", "lambada_openai", "piqa", "arc_challenge", "boolq", "openbookqa"]
+        batch_size=16

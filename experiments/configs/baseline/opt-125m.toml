@@ -1,0 +1,26 @@
+project="template_baseline"
+enable_wandb=false
+enable_perplexity_evaluation=true
+enable_harness_downstream_evaluation=true
+tags=["template", "baseline"]
+model_name="facebook/opt-125m"
+task="causal_lm"
+overwrite_checkpoint=true
+
+[wandb]
+    project="lqer-baselines"
+    job_type="opt-125m"
+    tags=["opt-125m"]
+
+[evaluate]
+    evaluate_baseline=true
+    hf_quant_method="llm_int4"
+    device_map="auto"
+    [evaluate.perplexity]
+        dataset="wikitext2"
+        batch_size=2
+        num_workers=8
+    [evaluate.harness_downstream]
+        no_cache=true
+        datasets=["arc_easy", "lambada_openai", "piqa", "arc_challenge", "boolq", "openbookqa"]
+        batch_size=32

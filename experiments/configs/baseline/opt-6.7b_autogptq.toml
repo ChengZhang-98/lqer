@@ -1,0 +1,26 @@
+project="template_baseline"
+enable_wandb=false
+enable_perplexity_evaluation=true
+enable_harness_downstream_evaluation=true
+tags=["template", "baseline"]
+model_name="iproskurina/opt-6.7b-gptq-4bit"
+task="causal_lm"
+overwrite_checkpoint=true
+
+[wandb]
+    project="lqer-baselines"
+    job_type="opt-6.7b"
+    tags=["opt-6.7b"]
+
+[evaluate]
+    evaluate_baseline=true
+    hf_quant_method="autogptq"
+    device_map=":ast:{'model.model.decoder.embed_tokens': 0, 'model.lm_head': 0, 'model.model.decoder.embed_positions': 0, 'model.model.decoder.final_layer_norm': 0, 'model.model.decoder.layers.0': 0, 'model.model.decoder.layers.1': 0, 'model.model.decoder.layers.2': 0, 'model.model.decoder.layers.3': 0, 'model.model.decoder.layers.4': 0, 'model.model.decoder.layers.5': 0, 'model.model.decoder.layers.6': 0, 'model.model.decoder.layers.7': 1, 'model.model.decoder.layers.8': 1, 'model.model.decoder.layers.9': 1, 'model.model.decoder.layers.10': 1, 'model.model.decoder.layers.11': 1, 'model.model.decoder.layers.12': 1, 'model.model.decoder.layers.13': 1, 'model.model.decoder.layers.14': 1, 'model.model.decoder.layers.15': 1, 'model.model.decoder.layers.16': 1, 'model.model.decoder.layers.17': 1, 'model.model.decoder.layers.18': 2, 'model.model.decoder.layers.19': 2, 'model.model.decoder.layers.20': 2, 'model.model.decoder.layers.21': 2, 'model.model.decoder.layers.22': 2, 'model.model.decoder.layers.23': 2, 'model.model.decoder.layers.24': 2, 'model.model.decoder.layers.25': 2, 'model.model.decoder.layers.26': 2, 'model.model.decoder.layers.27': 2, 'model.model.decoder.layers.28': 2, 'model.model.decoder.layers.29': 3, 'model.model.decoder.layers.30': 3, 'model.model.decoder.layers.31': 3}"
+    [evaluate.perplexity]
+        dataset="wikitext2"
+        batch_size=2
+        num_workers=8
+    [evaluate.harness_downstream]
+        no_cache=true
+        datasets=["arc_easy", "lambada_openai", "piqa", "arc_challenge", "boolq", "openbookqa"]
+        batch_size=16

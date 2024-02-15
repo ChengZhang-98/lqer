@@ -1,0 +1,26 @@
+project="template_baseline"
+enable_wandb=false
+enable_perplexity_evaluation=true
+enable_harness_downstream_evaluation=true
+tags=["template", "baseline"]
+model_name="TheBloke/llama-13B-GPTQ"
+task="causal_lm"
+overwrite_checkpoint=true
+
+[wandb]
+    project="lqer-baselines"
+    job_type="llama-13b"
+    tags=[]
+
+[evaluate]
+    evaluate_baseline=true
+    hf_quant_method="gptq"
+    device_map=":ast:{'model.embed_tokens': 0, 'model.layers.0': 0, 'model.layers.1': 0, 'model.layers.2': 0, 'model.layers.3': 0, 'model.layers.4': 0, 'model.layers.5': 0, 'model.layers.6': 0, 'model.layers.7': 0, 'model.layers.8': 0, 'model.layers.9': 0, 'model.layers.10': 0, 'model.layers.11': 0, 'model.layers.12': 0, 'model.layers.13': 0, 'model.layers.14': 1, 'model.layers.15': 1, 'model.layers.16': 1, 'model.layers.17': 1, 'model.layers.18': 1, 'model.layers.19': 1, 'model.layers.20': 1, 'model.layers.21': 1, 'model.layers.22': 1, 'model.layers.23': 1, 'model.layers.24': 1, 'model.layers.25': 1, 'model.layers.26': 1, 'model.layers.27': 1, 'model.layers.28': 1, 'model.layers.29': 2, 'model.layers.30': 2, 'model.layers.31': 2, 'model.layers.32': 2, 'model.layers.33': 2, 'model.layers.34': 2, 'model.layers.35': 2, 'model.layers.36': 2, 'model.layers.37': 2, 'model.layers.38': 2, 'model.layers.39': 2, 'model.norm': 2, 'lm_head': 2}"
+    [evaluate.perplexity]
+        dataset="wikitext2"
+        batch_size=2
+        num_workers=8
+    [evaluate.harness_downstream]
+        datasets=["arc_easy", "lambada_openai", "piqa", "arc_challenge", "boolq", "openbookqa"]
+        batch_size=16
+        no_cache=true

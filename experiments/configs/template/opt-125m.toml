@@ -1,0 +1,143 @@
+project="lqer_act_template"
+enable_wandb=false
+enable_profiling=true
+enable_approximation=true
+enable_perplexity_evaluation=true
+enable_harness_downstream_evaluation=true
+
+checkpoint_path="../../checkpoints/template/opt-125m"
+tags=["template"]
+model_name="facebook/opt-125m"
+
+[wandb]
+    project="lqer-act"
+    job_type="opt-125m"
+    tags=["opt-125m"]
+
+[evaluate]
+    disable_lqer=false
+    low_rank_dict="../../checkpoints/A_is_0/svd_approximation_opt-125m/approximate/low_rank_dict.pt"
+    [evaluate.perplexity]
+        dataset="wikitext2"
+        batch_size=8
+        num_workers=8
+    [evaluate.harness_downstream]
+        datasets=["arc_easy", "copa", "lambada_openai", "piqa", "winogrande", "arc_challenge", "boolq", "openbookqa"]
+        batch_size=64
+
+[profile]
+    dataset="slim_pajama_6b"
+    max_length=2048
+    batch_size=2
+    num_workers=8
+    num_samples=64
+    num_raw_samples=256
+    scale_dict="../../checkpoints/template/opt-125m/profile/scale_dict.pt"
+
+[approximate]
+    name="lqer-act"
+    device="cuda"
+    chunk_size=16
+    chunk_idx=0
+    [approximate.lqer_svd]
+    [approximate.lqer_act]
+    [approximate.approximator]
+        # 'default' means use the entry named default
+        'model\.decoder\.layers\.[0-9]+\.self_attn\.(k|q|v|out)_proj\.weight'="default"
+        'model\.decoder\.layers\.[0-9]+\.(fc1|fc2)\.weight'="default"
+        [approximate.approximator.default]
+            rank=64
+            [approximate.approximator.default.W_quantizer]
+                # 1️⃣ this should be the same as the entry in the q_config
+                name="block_fp"
+                width=4
+                exponent_width=8
+                exponent_bias="NA"
+                block_size=[1, 16]
+                skip_first_dim=false
+            [approximate.approximator.default.A_quantizer]
+                name="block_fp"
+                width=8
+                exponent_width=8
+                exponent_bias="NA"
+                block_size=[16, 1]
+                skip_first_dim=false
+            [approximate.approximator.default.B_quantizer]
+                name="block_fp"
+                width=8
+                exponent_width=8
+                exponent_bias="NA"
+                block_size=[16, 1]
+                skip_first_dim=false
+
+# this should be the same as the ranks in the approximator
+[l_config.linear]
+    rank=64
+
+[q_config.linear]
+    name="flexible_lqer"
+    is_ptq=true
+    default=false
+    [q_config.linear.x_quantizer]
+        name="block_fp"
+        width=8
+        exponent_width=8
+        exponent_bias="NA"
+        block_size=[1, 16]
+        skip_first_dim=true
+
+    [q_config.linear.w_quantizer]
+        # 1️⃣ this should be the same as the entry in the approximator
+        name="block_fp"
+        width=4
+        exponent_width=8
+        exponent_bias="NA"
+        block_size=[1, 16]
+        skip_first_dim=false
+
+    [q_config.linear.b_quantizer]
+        name="block_fp"
+        width=8
+        exponent_width=8
+        exponent_bias="NA"
+        block_size=[16]
+        skip_first_dim=false
+
+        # omit this entry, LinearFlexibleLqer will use the q_config of x_quantizer
+        # same rule applies to B_out_quantizer
+        # [q_config.linear.A_out_quantizer]
+
+[q_config.bmm]
+    name="flexible"
+    default=false
+    [q_config.bmm.x_quantizer]
+        name="block_fp"
+        width=8
+        exponent_width=8
+        exponent_bias="NA"
+        block_size=[1, 16]
+        skip_first_dim=true
+    [q_config.bmm.w_quantizer]
+        name="block_fp"
+        width=8
+        exponent_width=8
+        exponent_bias="NA"
+        block_size=[1, 16]
+        skip_first_dim=true
+[q_config.matmul]
+    name="flexible"
+    default=false
+    [q_config.matmul.x_quantizer]
+        name="block_fp"
+        width=8
+        exponent_width=8
+        exponent_bias="NA"
+        block_size=[1, 16]
+        skip_first_dim=true
+    [q_config.matmul.w_quantizer]
+        name="block_fp"
+        width=8
+        exponent_width=8
+        exponent_bias="NA"
+        block_size=[1, 16]
+        skip_first_dim=true
