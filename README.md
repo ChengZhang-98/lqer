@@ -27,6 +27,10 @@ LQER is a post-training-quantization method that reconstructs the quantization e
 
 The core idea of LQER is finding an approximator, $\widetilde{E}_q$, to shape the singular values of $E_q$ towards a desirable distribution easy to approximate in low rank: $\widetilde{E}_q=A_kB_k$
 
+| Normalized singular value distribution | Compute pattern |
+| :---: | :---: |
+| <img src="./figures/s1-Eq-distribution-comparison.png"  height="270"> | <img src="./figures/s1-llm-int8-vs-lqer.svg"  height="270"> |
+
 > **Normalized singular value distribution**
 >
 > <img src="./figures/s1-Eq-distribution-comparison.png"  height="300">
