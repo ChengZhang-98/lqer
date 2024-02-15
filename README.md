@@ -21,7 +21,7 @@ LQER is a post-training-quantization method that
 - achieves near-lossless W4A8 LLM PTQ while using 1.36 $\times$ hardware resources compared to SoTA methods.
 
 <details>
-<summary> Motivation </summary>
+<summary> Motivation of LQER </summary>
 
 LQER is a post-training-quantization method that reconstructs the quantization error, $E_q=W-W_q$, using low-rank approximation.
 
@@ -29,19 +29,8 @@ The core idea of LQER is finding an approximator, $\widetilde{E}_q$, to shape th
 
 | Normalized singular value distribution | Compute pattern |
 | :---: | :---: |
-| <img src="./figures/s1-Eq-distribution-comparison.png"  height="270"> | <img src="./figures/s1-llm-int8-vs-lqer.svg"  height="270"> |
-
-> **Normalized singular value distribution**
->
-> <img src="./figures/s1-Eq-distribution-comparison.png"  height="300">
->
-> $\text{LQER}$ is singular values of $\mathrm{SVD}(E_q)$, and $\text{L}^2\text{QER}$ denotes our activation-induced approximator.
-
-> **Compute pattern of LLM.int8() and $\text{LQER}$**
->
-> <img src="./figures/s1-llm-int8-vs-lqer.svg"  height="300">
->
-> $\text{LQER}$ enjoys a static compute pattern without the need for scatter/gatter operations.
+| <p> <img src="./figures/s1-Eq-distribution-comparison.png"  height="270"> </p> | <p> <img src="./figures/s1-llm-int8-vs-lqer.svg"  height="270"> </p> |
+| $\text{LQER}$ denotes the singular values of $\mathrm{SVD}(E_q)$;<br> and $\text{L}^2\text{QER}$ is our activation-induced approximator. | $\text{LQER}$ enjoys a static compute pattern without the need for scatter/gatter operations. |
 
 </details>
 
