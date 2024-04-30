@@ -33,7 +33,7 @@ model_name="TinyLlama/TinyLlama-1.1B-Chat-v1.0"              # HuggingFace FP32 
     batch_size=2
     num_workers=8
     num_samples=64
-    num_raw_samples=256
+    num_raw_samples=4096
     scale_dict="../../checkpoints/template/tiny-llama-1.1b/profile/scale_dict.pt"
     device_map="auto"
 

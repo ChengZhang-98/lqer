@@ -79,7 +79,7 @@ def run_profiler(config: dict, project_path) -> dict:
 
     # scaling_mode = "mean(abs())"
     # scaling_mode = "sqrt(mean(square()))"
-    scaling_mode = profile_config["scaling_mode"]
+    scaling_mode = profile_config.get("scaling_mode", "sqrt(mean(square()))")
     logger.info(f"scaling_mode: {scaling_mode}")
     profiler_factory = register_scale_hooks(model, scaling_mode)
 
@@ -202,7 +202,7 @@ def run_evaluate_perplexity(config: dict, project_path: Path) -> dict:
     """
     eval_config = config["evaluate"]
     eval_ppl_config = eval_config["perplexity"]
-    dtype = getattr(torch, eval_config.get("dtype", "float32"))
+    dtype = getattr(torch, eval_config.get("dtype", "float16"))
 
     disable_lqer = eval_config["disable_lqer"]
 
@@ -286,7 +286,7 @@ def run_evaluate_harness_downstream(config: dict, project_path: Path) -> dict:
     eval_hd_config = eval_config["harness_downstream"]
     disable_lqer = eval_config["disable_lqer"]
 
-    dtype = getattr(torch, eval_config.get("dtype", "float32"))
+    dtype = getattr(torch, eval_config.get("dtype", "float16"))
     model = AutoModelForCausalLM.from_pretrained(
         config["model_name"], torch_dtype=dtype, _attn_implementation="eager"
     )

@@ -20,20 +20,21 @@ ckpt_dir=$work_dir/checkpoints/LQER-act
 function run_pipeline() {
     rank=$1
     w_precision=$2
-    w_block_size=$4
+    w_block_size=$3
+    num_profile_samples=$4
 
     w_block_size_escape=${w_block_size//,/x}
     WxAy=W${w_precision}
 
     # constants
-    num_profile_samples=64
+    # num_profile_samples=64
 
     # besides modifying toml template, you can override downstream tasks by adding the following line to pipeline.py
     # --evaluate:harness_downstream:datasets=":ast:['arc_easy', 'lambada_openai', 'piqa', 'arc_challenge', 'boolq', 'openbookqa']" \
 
-    save_dir=$ckpt_dir/$tag/${WxAy}/WB${w_block_size_escape}/rank${rank} && mkdir -p $save_dir
+    save_dir=$ckpt_dir/$tag/${WxAy}/WB${w_block_size_escape}/rank${rank}/profile-cnt_${num_profile_samples} && mkdir -p $save_dir
 
-    echo "=========== Pipeline of LQER-act-w-only, rank=$rank, WxAy=${WxAy}, W-BlockSize=[$w_block_size] ==========="
+    echo "=========== Pipeline of LQER-act-w-only, rank=$rank, WxAy=${WxAy}, W-BlockSize=[$w_block_size], profile_cnt=$num_profile_samples ==========="
     cd $pipeline_run_dir
     conda run -n $env_name --no-capture-output python pipeline.py $config_template $tag \
         --project=lqer-act-sweep \
@@ -60,7 +61,7 @@ function run_pipeline() {
         --enable_profiling=:ast:1 \
         --enable_approximation=:ast:1 \
         --enable_perplexity_evaluation=:ast:1 \
-        --enable_harness_downstream_evaluation=:ast:1
+        --enable_harness_downstream_evaluation=:ast:0
 
     # 📝 check these --enable_xxx
 
@@ -70,17 +71,20 @@ function run_pipeline() {
     fi
 }
 
-declare -a rank_options=(32)
-declare -a w_precisions=(4)
-declare -a w_block_size_options=("1,-1")
+declare -a rank_options=(64)
+declare -a w_precisions=(3)
+declare -a w_block_size_options=("1,32")
+declare -a num_profile_samples=(256)
 
 for r in "${rank_options[@]}"; do
     for w_p in "${w_precisions[@]}"; do
         for w_bs in "${w_block_size_options[@]}"; do
-            run_pipeline $r $w_p $x_p $w_bs $x_bs
-            if [ $? -ne 0 ]; then
-                exit 1
-            fi
+            for n_p in "${num_profile_samples[@]}"; do
+                run_pipeline $r $w_p $w_bs $n_p
+                if [ $? -ne 0 ]; then
+                    exit 1
+                fi
+            done
         done
     done
 done
