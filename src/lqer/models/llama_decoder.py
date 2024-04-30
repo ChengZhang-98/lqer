@@ -38,14 +38,24 @@ from transformers.utils import (
     logging,
 )
 from transformers.models.llama.configuration_llama import LlamaConfig
-from transformers.models.llama.modeling_llama import is_flash_attn_2_available, LlamaRMSNorm, LlamaRotaryEmbedding, LlamaLinearScalingRotaryEmbedding, LlamaDynamicNTKScalingRotaryEmbedding, repeat_kv, apply_rotary_pos_emb, LlamaForCausalLM, LlamaForSequenceClassification
+from transformers.models.llama.modeling_llama import (
+    is_flash_attn_2_available,
+    LlamaRMSNorm,
+    LlamaRotaryEmbedding,
+    LlamaLinearScalingRotaryEmbedding,
+    LlamaDynamicNTKScalingRotaryEmbedding,
+    repeat_kv,
+    apply_rotary_pos_emb,
+    LlamaForCausalLM,
+    LlamaForSequenceClassification,
+)
 from ..quantize import get_quantized_layer_cls, get_quantized_func
 
 logger = logging.get_logger(__name__)
 
 
 if is_flash_attn_2_available():
-    from flash_attn import flash_attn_func, flash_attn_varlen_func # noqa
+    from flash_attn import flash_attn_func, flash_attn_varlen_func  # noqa
     from flash_attn.bert_padding import index_first_axis, pad_input, unpad_input  # noqa
 
 
@@ -70,13 +80,24 @@ class LlamaQuantizedMLP(nn.Module):
             down_proj_slices = self.down_proj.weight.split(slice, dim=1)
 
             gate_proj = torch.cat(
-                [F.linear(x, gate_proj_slices[i]) for i in range(self.config.pretraining_tp)], dim=-1
+                [
+                    F.linear(x, gate_proj_slices[i])
+                    for i in range(self.config.pretraining_tp)
+                ],
+                dim=-1,
             )
-            up_proj = torch.cat([F.linear(x, up_proj_slices[i]) for i in range(self.config.pretraining_tp)], dim=-1)
+            up_proj = torch.cat(
+                [
+                    F.linear(x, up_proj_slices[i])
+                    for i in range(self.config.pretraining_tp)
+                ],
+                dim=-1,
+            )
 
             intermediate_states = (self.act_fn(gate_proj) * up_proj).split(slice, dim=2)
             down_proj = [
-                F.linear(intermediate_states[i], down_proj_slices[i]) for i in range(self.config.pretraining_tp)
+                F.linear(intermediate_states[i], down_proj_slices[i])
+                for i in range(self.config.pretraining_tp)
             ]
             down_proj = sum(down_proj)
         else:
@@ -88,7 +109,9 @@ class LlamaQuantizedMLP(nn.Module):
 class LlamaQuantizedAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
-    def __init__(self, config: LlamaConfig, layer_idx: int, q_config: dict, l_config: dict):
+    def __init__(
+        self, config: LlamaConfig, layer_idx: int, q_config: dict, l_config: dict
+    ):
         super().__init__()
         self.config = config
         self.layer_idx = layer_idx
@@ -153,7 +176,11 @@ class LlamaQuantizedAttention(nn.Module):
                 raise ValueError(f"Unknown RoPE scaling type {scaling_type}")
 
     def _shape(self, tensor: torch.Tensor, seq_len: int, bsz: int):
-        return tensor.view(bsz, seq_len, self.num_heads, self.head_dim).transpose(1, 2).contiguous()
+        return (
+            tensor.view(bsz, seq_len, self.num_heads, self.head_dim)
+            .transpose(1, 2)
+            .contiguous()
+        )
 
     def forward(
         self,
@@ -196,9 +223,15 @@ class LlamaQuantizedAttention(nn.Module):
             key_states = self.k_proj(hidden_states)
             value_states = self.v_proj(hidden_states)
 
-        query_states = query_states.view(bsz, q_len, self.num_heads, self.head_dim).transpose(1, 2)
-        key_states = key_states.view(bsz, q_len, self.num_key_value_heads, self.head_dim).transpose(1, 2)
-        value_states = value_states.view(bsz, q_len, self.num_key_value_heads, self.head_dim).transpose(1, 2)
+        query_states = query_states.view(
+            bsz, q_len, self.num_heads, self.head_dim
+        ).transpose(1, 2)
+        key_states = key_states.view(
+            bsz, q_len, self.num_key_value_heads, self.head_dim
+        ).transpose(1, 2)
+        value_states = value_states.view(
+            bsz, q_len, self.num_key_value_heads, self.head_dim
+        ).transpose(1, 2)
 
         kv_seq_len = key_states.shape[-2]
         if past_key_value is not None:
@@ -210,11 +243,15 @@ class LlamaQuantizedAttention(nn.Module):
                 )
             kv_seq_len += past_key_value.get_usable_length(kv_seq_len, self.layer_idx)
         cos, sin = self.rotary_emb(value_states, seq_len=kv_seq_len)
-        query_states, key_states = apply_rotary_pos_emb(query_states, key_states, cos, sin, position_ids)
+        query_states, key_states = apply_rotary_pos_emb(
+            query_states, key_states, cos, sin, position_ids
+        )
 
         if past_key_value is not None:
             cache_kwargs = {"sin": sin, "cos": cos}  # Specific to RoPE models
-            key_states, value_states = past_key_value.update(key_states, value_states, self.layer_idx, cache_kwargs)
+            key_states, value_states = past_key_value.update(
+                key_states, value_states, self.layer_idx, cache_kwargs
+            )
 
         key_states = repeat_kv(key_states, self.num_key_value_groups)
         value_states = repeat_kv(value_states, self.num_key_value_groups)
@@ -242,12 +279,18 @@ class LlamaQuantizedAttention(nn.Module):
             attn_weights = attn_weights + attention_mask
 
         # upcast attention to fp32
-        attn_weights = nn.functional.softmax(attn_weights, dim=-1, dtype=torch.float32).to(query_states.dtype)
-        attn_weights = nn.functional.dropout(attn_weights, p=self.attention_dropout, training=self.training)
+        attn_weights = nn.functional.softmax(
+            attn_weights, dim=-1, dtype=torch.float32
+        ).to(query_states.dtype)
+        attn_weights = nn.functional.dropout(
+            attn_weights, p=self.attention_dropout, training=self.training
+        )
         # *: matmul of attention weights and V
         attn_output = torch.matmul(attn_weights, value_states)
         attn_weights = attn_weights.reshape(bsz * self.num_heads, q_len, kv_seq_len)
-        value_states = value_states.reshape(bsz * self.num_heads, kv_seq_len, self.head_dim)
+        value_states = value_states.reshape(
+            bsz * self.num_heads, kv_seq_len, self.head_dim
+        )
         attn_output = get_quantized_func("matmul", q_config=self.q_config["matmul_0"])(
             attn_weights, value_states, q_config=self.q_config["matmul_1"]
         )
@@ -284,8 +327,11 @@ LLAMA_QUANTIZED_ATTENTION_CLASSES = {
     "sdpa": None,
 }
 
+
 class LlamaQuantizedDecoderLayer(nn.Module):
-    def __init__(self, config: LlamaConfig, layer_idx: int, q_config: dict, l_config: dict):
+    def __init__(
+        self, config: LlamaConfig, layer_idx: int, q_config: dict, l_config: dict
+    ):
         super().__init__()
         self.hidden_size = config.hidden_size
 
@@ -293,11 +339,22 @@ class LlamaQuantizedDecoderLayer(nn.Module):
             raise ValueError(
                 f"Attention implementation {config._attn_implementation} is not supported for LlamaQuantizedDecoderLayer"
             )
-        self.self_attn = LLAMA_QUANTIZED_ATTENTION_CLASSES[config._attn_implementation](config=config, layer_idx=layer_idx, q_config=q_config["self_attn"], l_config=l_config["self_attn"] if l_config is not None else None)
+        self.self_attn = LLAMA_QUANTIZED_ATTENTION_CLASSES[config._attn_implementation](
+            config=config,
+            layer_idx=layer_idx,
+            q_config=q_config["self_attn"],
+            l_config=l_config["self_attn"] if l_config is not None else None,
+        )
 
-        self.mlp = LlamaQuantizedMLP(config, q_config=q_config["mlp"], l_config=l_config["mlp"] if l_config is not None else None)
+        self.mlp = LlamaQuantizedMLP(
+            config,
+            q_config=q_config["mlp"],
+            l_config=l_config["mlp"] if l_config is not None else None,
+        )
         self.input_layernorm = LlamaRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
-        self.post_attention_layernorm = LlamaRMSNorm(config.hidden_size, eps=config.rms_norm_eps)
+        self.post_attention_layernorm = LlamaRMSNorm(
+            config.hidden_size, eps=config.rms_norm_eps
+        )
 
     def forward(
         self,
@@ -308,7 +365,9 @@ class LlamaQuantizedDecoderLayer(nn.Module):
         output_attentions: Optional[bool] = False,
         use_cache: Optional[bool] = False,
         **kwargs,
-    ) -> Tuple[torch.FloatTensor, Optional[Tuple[torch.FloatTensor, torch.FloatTensor]]]:
+    ) -> Tuple[
+        torch.FloatTensor, Optional[Tuple[torch.FloatTensor, torch.FloatTensor]]
+    ]:
         """
         Args:
             hidden_states (`torch.FloatTensor`): input to the layer of shape `(batch, seq_len, embed_dim)`
@@ -360,6 +419,7 @@ class LlamaQuantizedDecoderLayer(nn.Module):
 
         return outputs
 
+
 def _layer_q_config_builder(num_hidden_layers: int, q_config: dict):
     model_layer_cfg = q_config.get("model_layer", None)
     if model_layer_cfg is None:
@@ -391,6 +451,7 @@ def _layer_q_config_builder(num_hidden_layers: int, q_config: dict):
             model_q_cfg[layer_entry] = deepcopy(model_layer_cfg)
     return model_q_cfg
 
+
 def _layer_l_config_builder(num_hidden_layers: int, l_config: dict):
     model_layer_cfg = l_config.get("model_layer", None)
     if model_layer_cfg is None:
@@ -420,6 +481,7 @@ def _layer_l_config_builder(num_hidden_layers: int, l_config: dict):
 
     return model_l_cfg
 
+
 def quantize_llama_model(
     model: LlamaForCausalLM | LlamaForSequenceClassification,
     q_config: dict,
@@ -438,7 +500,9 @@ def quantize_llama_model(
             layer_l_config = l_config[layer_entry]
 
         # replace the decoder layer with quantized decoder layer
-        new_decoder_layer = LlamaQuantizedDecoderLayer(model.config, layer_q_config, layer_l_config)
+        new_decoder_layer = LlamaQuantizedDecoderLayer(
+            model.config, layer_id, layer_q_config, layer_l_config
+        )
         new_decoder_layer.to(next(iter(model.parameters())).dtype)
         new_decoder_layer.load_state_dict(ori_decoder_layer.state_dict(), strict=False)
         model.model.layers[layer_id] = new_decoder_layer
