@@ -36,7 +36,7 @@ model_name="facebook/opt-1.3b"
     batch_size=2
     num_workers=8
     num_samples=64
-    num_raw_samples=256
+    num_raw_samples=4096
     scale_dict="../../checkpoints/template/opt-1.3b/profile/scale_dict.pt"
 
 [approximate]
