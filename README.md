@@ -3,17 +3,23 @@
 [ [Paper](https://arxiv.org/abs/2402.02446) ]
 [ [Code](https://github.com/ChengZhang-98/big-little-llama/tree/lqer) ]
 
-<img src="./figures/lqer-cover.png" width="720">
+<img src="./figures/lqer-cover.png" width="640">
 
-🎉🎉🎉 Our work is accepted in ICML2024.
+- "Big-little" Llama
 
-<details>
-<summary> "Big-little" Llama</summary>
+  LQER runs a high-rank low-precision GEMM and a group of low-rank high-precision GEMMs in parallel to push the limit of lossless LLM PTQ.
 
-LQER runs a high-rank low-precision GEMM and a group of low-rank high-precision GEMMs in parallel to push the limit of lossless LLM PTQ.
-</details>
+- [DeepWok Lab](https://deepwok.github.io/)
+
+  The DeepWok Lab, is an ML research group led by [Dr. Aaron Zhao](https://aaron-zhao123.github.io/), where the group members are mainly from Imperial College London and the University of Cambridge.
 
 ---
+
+## News
+
+- 🎉🎉🎉 Our work is accepted in ICML2024.
+
+## Introduction
 
 LQER is a post-training-quantization method that
 
