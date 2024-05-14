@@ -77,9 +77,7 @@ def run_profiler(config: dict, project_path) -> dict:
     logger.info(f"dtype: {dtype}, device_map: {device_map}")
     model = dispatch_model(model, device_map=device_map)
 
-    # scaling_mode = "mean(abs())"
-    # scaling_mode = "sqrt(mean(square()))"
-    scaling_mode = profile_config.get("scaling_mode", "sqrt(mean(square()))")
+    scaling_mode = profile_config.get("scaling_mode", "mean(abs())")
     logger.info(f"scaling_mode: {scaling_mode}")
     profiler_factory = register_scale_hooks(model, scaling_mode)
 

@@ -51,48 +51,11 @@ class ScaleHookFactoryMeanAbs(ScaleHookFactoryBase):
         return self.scales
 
 
-class ScaleHookFactorySqrtMeanSquare(ScaleHookFactoryBase):
-    """using sqrt( avg( x_i^2) ) as the diagonal elements of S"""
-
-    def __init__(self):
-        super().__init__()
-        self.n_samples = {}
-
-    def get_scale_hook(self, name: str, in_features: int) -> callable:
-        self.scales[name] = torch.zeros(in_features, dtype=torch.float32)
-        self.n_samples[name] = 0
-        self.is_profiled[name] = False
-
-        @torch.no_grad()
-        def scale_hook(
-            module: torch.nn.Linear,
-            input: tuple[torch.Tensor],
-            output: torch.Tensor,
-        ) -> None:
-            x = input[0].float()
-            x = x.view(-1, x.shape[-1]).pow(2)
-            self.n_samples[name] += x.shape[0]
-            scale = self.scales[name].to(x.device)
-            self.scales[name] = scale + x.sum(0)
-            self.is_profiled[name] = True
-
-        return scale_hook
-
-    def get_scale_dict(self) -> dict[str, torch.Tensor]:
-        assert self.is_all_profiled(), "Not all scales are profiled."
-        for name in self.scales:
-            self.scales[name] = torch.sqrt(self.scales[name] / self.n_samples[name])
-
-        return self.scales
-
-
 def register_scale_hooks(
     model: torch.nn.Module, mode: str = "mean(abs())"
 ) -> ScaleHookFactoryMeanAbs:
     if mode == "mean(abs())":
         scale_hook_factory = ScaleHookFactoryMeanAbs()
-    elif mode == "sqrt(mean(square()))":
-        scale_hook_factory = ScaleHookFactorySqrtMeanSquare()
     else:
         raise ValueError(f"Unknown mode: {mode}")
     for name, module in model.named_modules():
