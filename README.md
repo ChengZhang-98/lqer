@@ -13,8 +13,6 @@
 
   The DeepWok Lab, is an ML research group led by [Dr. Aaron Zhao](https://aaron-zhao123.github.io/), where the group members are mainly from Imperial College London and the University of Cambridge.
 
----
-
 ## News
 
 - 🎉🎉🎉 Our work is accepted in ICML2024.
@@ -83,7 +81,7 @@ cd experiments/pipeline
 ./sweep_lqer_act.sh ../configs/template/llama-7b.toml my-llama-7b-tag
 ```
 
----
+## Citation
 
 If you find this work helpful, please consider citing:
 
