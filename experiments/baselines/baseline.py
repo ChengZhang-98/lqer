@@ -18,6 +18,7 @@ from transformers import (
     GPTQConfig,
     BitsAndBytesConfig,
 )
+
 try:
     from auto_gptq import exllama_set_max_input_length
 except ImportError:
@@ -39,6 +40,7 @@ from lqer.evaluate import (
     harness_make_table,
 )
 from lqer.datasets import get_data_module
+from lqer.utils import save_config
 
 logger = logging.getLogger("lqer.EVALUATE_BASELINES")
 
@@ -134,7 +136,7 @@ def main():
     logger.info(
         f"Creating model ({eval_config['hf_quant_method']}): {config['model_name']}"
     )
-    logger.info(f"device_map: {device_map}")
+    logger.info(f"device_map: {device_map}, q_method: {eval_config['hf_quant_method']}")
     model = get_baseline_model(
         eval_config["hf_quant_method"],
         config["model_name"],
@@ -249,6 +251,9 @@ def main():
             accu_sum += results["results"][task]["acc"]
             task_cnt += 1
         logger.info(f"avg_harness_acc: {accu_sum / task_cnt}")
+
+    # save config to pipeline dir
+    save_config(config, pipeline_prj_dir / "config.toml")
 
 
 if __name__ == "__main__":

@@ -5,6 +5,8 @@
 
 <img src="./figures/lqer-cover.png" width="720">
 
+🎉🎉🎉 Our work is accepted in ICML2024.
+
 <details>
 <summary> "Big-little" Llama</summary>
 

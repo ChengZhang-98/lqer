@@ -35,7 +35,7 @@ model_name="facebook/opt-6.7b"
     batch_size=2
     num_workers=8
     num_samples=64
-    num_raw_samples=256
+    num_raw_samples=4096
     device_map=":ast:{'model.decoder.embed_tokens': 0, 'lm_head': 0, 'model.decoder.embed_positions': 0, 'model.decoder.final_layer_norm': 0, 'model.decoder.layers.0': 0, 'model.decoder.layers.1': 0, 'model.decoder.layers.2': 0, 'model.decoder.layers.3': 0, 'model.decoder.layers.4': 0, 'model.decoder.layers.5': 0, 'model.decoder.layers.6': 0, 'model.decoder.layers.7': 0, 'model.decoder.layers.8': 0, 'model.decoder.layers.9': 0, 'model.decoder.layers.10': 0, 'model.decoder.layers.11': 1, 'model.decoder.layers.12': 1, 'model.decoder.layers.13': 1, 'model.decoder.layers.14': 1, 'model.decoder.layers.15': 1, 'model.decoder.layers.16': 1, 'model.decoder.layers.17': 1, 'model.decoder.layers.18': 1, 'model.decoder.layers.19': 1, 'model.decoder.layers.20': 1, 'model.decoder.layers.21': 1, 'model.decoder.layers.22': 2, 'model.decoder.layers.23': 2, 'model.decoder.layers.24': 2, 'model.decoder.layers.25': 2, 'model.decoder.layers.26': 2, 'model.decoder.layers.27': 2, 'model.decoder.layers.28': 2, 'model.decoder.layers.29': 2, 'model.decoder.layers.30': 2, 'model.decoder.layers.31': 2}"
     scale_dict="../../checkpoints/template/opt-6.7b/profile/scale_dict.pt"
 

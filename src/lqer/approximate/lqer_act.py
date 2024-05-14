@@ -64,9 +64,10 @@ class WeightApproximatorLqerAct(WeightApproximatorBase):
         scale = [s_1, s_2, ..., s_n], n = in_features
         scale_normalized = scale / sqrt(min(scale) * max(scale))
         """
-        scale = scale.clamp(min=SCALE_CLAMP_MIN)
-        scale = scale / torch.sqrt(scale.min() * scale.max())
-        self.scale.data.copy_(scale)
+        # scale = scale.clamp(min=SCALE_CLAMP_MIN)
+        # scale = scale / torch.sqrt(scale.min() * scale.max())
+        self.scale.copy_(scale)
+        pass
 
     @torch.no_grad()
     def q_error_T(self) -> torch.Tensor:
@@ -145,7 +146,9 @@ class ModelApproximatorLqerAct(ModelApproximatorBase):
                 B_quantizer=b_quantizer,
             )
         if len(self.approximators) == 0:
-            logger.error("No matched weight found. Please check the config file and the weight names.")
+            logger.error(
+                "No matched weight found. Please check the config file and the weight names."
+            )
 
     def load_scale_dict(self, scale_dict: dict[str, torch.Tensor]):
         for w_name, approximator in self.approximators.items():
@@ -159,7 +162,9 @@ class ModelApproximatorLqerAct(ModelApproximatorBase):
     def compute(self, delete_after_compute: bool = True) -> dict[str, torch.Tensor]:
         device = self.config.get("device", "cuda:0")
 
-        df = pd.DataFrame(columns=["name", "rank", "l1_norm(AB-Q_error_T)/n", "w_dim0", "w_dim1"])
+        df = pd.DataFrame(
+            columns=["name", "rank", "l1_norm(AB-Q_error_T)/n", "w_dim0", "w_dim1"]
+        )
         error_T_dict = {}
         low_rank_dict = {}
 
@@ -174,7 +179,9 @@ class ModelApproximatorLqerAct(ModelApproximatorBase):
             approx.approximate()
 
             q_error_T = approx.q_error_T()
-            l1_norm_error = torch.linalg.vector_norm(approx.approximated_q_error_T() - q_error_T, ord=1)
+            l1_norm_error = torch.linalg.vector_norm(
+                approx.approximated_q_error_T() - q_error_T, ord=1
+            )
             l1_norm_error /= q_error_T.numel()
             l1_norm_error = l1_norm_error.cpu().item()
 
@@ -196,7 +203,9 @@ class ModelApproximatorLqerAct(ModelApproximatorBase):
                 del approx
                 gc.collect()
 
-            prog_bar.set_description_str(f"{w_name:<60}, 1/n * ||AB - Q_error^T ||_1 ={l1_norm_error:.6f}")
+            prog_bar.set_description_str(
+                f"{w_name:<60}, 1/n * ||AB - Q_error^T ||_1 ={l1_norm_error:.6f}"
+            )
 
         return {
             "df": df,

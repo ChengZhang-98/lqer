@@ -61,10 +61,12 @@ def run_profiler(config: dict, project_path) -> dict:
     - No significant overhead as model layers + hooks are distributed across GPUs in model parallel mode.
     """
     profile_config = config["profile"]
-    dtype = getattr(torch, profile_config.get("dtype", "float16"))
+    dtype = getattr(torch, profile_config.get("dtype", "float32"))
 
     tokenizer = AutoTokenizer.from_pretrained(config["model_name"])
-    model = AutoModelForCausalLM.from_pretrained(config["model_name"], torch_dtype=dtype)
+    model = AutoModelForCausalLM.from_pretrained(
+        config["model_name"], torch_dtype=dtype, _attn_implementation="eager"
+    )
     if hasattr(model, "tie_weights"):
         model.tie_weights()
     device_map = create_device_map(
@@ -75,7 +77,9 @@ def run_profiler(config: dict, project_path) -> dict:
     logger.info(f"dtype: {dtype}, device_map: {device_map}")
     model = dispatch_model(model, device_map=device_map)
 
-    profiler_factory = register_scale_hooks(model)
+    scaling_mode = profile_config.get("scaling_mode", "mean(abs())")
+    logger.info(f"scaling_mode: {scaling_mode}")
+    profiler_factory = register_scale_hooks(model, scaling_mode)
 
     dataset_dict = get_data_module(
         name=profile_config["dataset"],
@@ -120,7 +124,9 @@ def run_profiler(config: dict, project_path) -> dict:
 def run_approximator(config: dict, project_path: Path) -> dict:
     ray.init(logging_level=logging.ERROR)
     dtype = getattr(torch, config["profile"].get("dtype", "float32"))
-    model: torch.nn.Module = AutoModelForCausalLM.from_pretrained(config["model_name"], torch_dtype=dtype)
+    model: torch.nn.Module = AutoModelForCausalLM.from_pretrained(
+        config["model_name"], torch_dtype=dtype, _attn_implementation="eager"
+    )
     state_dict = model.state_dict()
 
     approximator_cls = get_model_approximator_cls(config["approximate"]["name"])
@@ -178,7 +184,9 @@ def run_approximator(config: dict, project_path: Path) -> dict:
     df_describe.to_csv(project_path / "results_summary.csv")
 
     if config["enable_wandb"]:
-        wandb.run.summary["avg_abs_error"] = result_df.loc[:, "l1_norm(AB-Q_error_T)/n"].mean()
+        wandb.run.summary["avg_abs_error"] = result_df.loc[
+            :, "l1_norm(AB-Q_error_T)/n"
+        ].mean()
 
     ray.shutdown()
     return config
@@ -197,7 +205,9 @@ def run_evaluate_perplexity(config: dict, project_path: Path) -> dict:
     disable_lqer = eval_config["disable_lqer"]
 
     tokenizer = AutoTokenizer.from_pretrained(config["model_name"])
-    model = AutoModelForCausalLM.from_pretrained(config["model_name"], torch_dtype=dtype)
+    model = AutoModelForCausalLM.from_pretrained(
+        config["model_name"], torch_dtype=dtype, _attn_implementation="eager"
+    )
     # create FP32 model, WxAy model (no Ak Bk), or LQER model
     quantize_model(
         model,
@@ -253,7 +263,9 @@ def run_evaluate_perplexity(config: dict, project_path: Path) -> dict:
 
     logger.info(f"results: \n{json.dumps(results, indent=4)}")
 
-    save_file = project_path.joinpath(eval_ppl_config["dataset"].replace("/", "_") + ".json")
+    save_file = project_path.joinpath(
+        eval_ppl_config["dataset"].replace("/", "_") + ".json"
+    )
     with open(save_file, "w") as f:
         json.dump(results, f, indent=4)
 
@@ -273,7 +285,9 @@ def run_evaluate_harness_downstream(config: dict, project_path: Path) -> dict:
     disable_lqer = eval_config["disable_lqer"]
 
     dtype = getattr(torch, eval_config.get("dtype", "float16"))
-    model = AutoModelForCausalLM.from_pretrained(config["model_name"], torch_dtype=dtype)
+    model = AutoModelForCausalLM.from_pretrained(
+        config["model_name"], torch_dtype=dtype, _attn_implementation="eager"
+    )
     quantize_model(
         model,
         q_config=config["q_config"],
@@ -331,7 +345,6 @@ def run_evaluate_harness_downstream(config: dict, project_path: Path) -> dict:
     return config
 
 
-
 def run_pipeline() -> None:
     """
     Profile -> Approximate -> Evaluate
@@ -360,22 +373,30 @@ def run_pipeline() -> None:
         logger.info("🚀 Profiling...")
         profile_pth.mkdir(parents=True, exist_ok=True)
         config = run_profiler(config, profile_pth)
+        config["enable_profiling"] = False
         save_config(config, pipeline_prj_pth / "config_after_profiling.toml")
     if config.get("enable_approximation", False):
         logger.info("🚀 Approximating...")
         approx_pth.mkdir(parents=True, exist_ok=True)
         config = run_approximator(config, approx_pth)
+        config["enable_approximation"] = False
         save_config(config, pipeline_prj_pth / "config_after_approximation.toml")
     if config.get("enable_perplexity_evaluation", False):
         logger.info("🚀 Evaluating perplexity...")
         eval_ppl_pth.mkdir(parents=True, exist_ok=True)
         config = run_evaluate_perplexity(config, eval_ppl_pth)
-        save_config(config, pipeline_prj_pth / "config_after_perplexity_evaluation.toml")
+        config["enable_perplexity_evaluation"] = False
+        save_config(
+            config, pipeline_prj_pth / "config_after_perplexity_evaluation.toml"
+        )
     if config.get("enable_harness_downstream_evaluation", False):
         logger.info("🚀 Evaluating harness downstream...")
         eval_harness_downstream_pth.mkdir(parents=True, exist_ok=True)
         config = run_evaluate_harness_downstream(config, eval_harness_downstream_pth)
-        save_config(config, pipeline_prj_pth / "config_after_harness_downstream_evaluation.toml")
+        config["enable_harness_downstream_evaluation"] = False
+        save_config(
+            config, pipeline_prj_pth / "config_after_harness_downstream_evaluation.toml"
+        )
 
     save_config(config, pipeline_prj_pth / "config.toml")
 

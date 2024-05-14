@@ -61,7 +61,7 @@ function run_pipeline() {
         --enable_wandb=:ast:0 \
         --enable_profiling=:ast:0 \
         --enable_approximation=:ast:0 \
-        --enable_perplexity_evaluation=:ast:1 \
+        --enable_perplexity_evaluation=:ast:0 \
         --enable_harness_downstream_evaluation=:ast:1
 
     if [ $? -ne 0 ]; then
@@ -70,10 +70,10 @@ function run_pipeline() {
     fi
 }
 
-declare -a w_precisions=(4)
+declare -a w_precisions=(8)
 declare -a x_precisions=(8)
-declare -a w_block_size_options=("1,16")
-declare -a x_block_size_options=("1,16")
+declare -a w_block_size_options=("1,-1")
+declare -a x_block_size_options=("1,-1")
 
 for wp in "${w_precisions[@]}"; do
     for xp in "${x_precisions[@]}"; do

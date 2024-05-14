@@ -1,31 +1,31 @@
 project="lqer_act_template"
 enable_wandb=false
-enable_profiling=true
-enable_approximation=true
-enable_perplexity_evaluation=true
-enable_harness_downstream_evaluation=true
+enable_profiling=true                     # profile the activation magnitudes
+enable_approximation=true                 # approixmate the quantization error and calculate Ak and Bk
+enable_perplexity_evaluation=true         # evaluate per-token perplexity following GPTQ (seq_len=2048, use "\n\n" to split texts)
+enable_harness_downstream_evaluation=true # evaluate downstream tasks using lm-eval-harness
 
-checkpoint_path="../../checkpoints/template/opt-2.7b"
-tags=["template"]
-model_name="facebook/opt-2.7b"
+checkpoint_path="../../checkpoints/template/tiny-llama-1.1b" # output directory
+tags=["template"]                                            # tags
+model_name="TinyLlama/TinyLlama-1.1B-Chat-v1.0"              # HuggingFace FP32 model checkpoint name
 
 [wandb]
-    project="lqer-act"
-    job_type="opt-2.7b"
-    tags=["opt-2.7b"]
+    project="lqer-act"         # wandb project name
+    job_type="tiny-llama-1.1b"
+    tags=["tiny-llama-1.1b"]   # all tags will be saved to wandb
 
 [evaluate]
-    disable_lqer=false
-    low_rank_dict="../../checkpoints/template/opt-2.7b/approximate/low_rank_dict.pt"
+    disable_lqer=false                                                                      # disable_lqer means only WxAy quantization without Ak and Bk
+    low_rank_dict="../../checkpoints/template/tiny-llama-1.1b/approximate/low_rank_dict.pt" # the tensor dict of Ak and Bk
     [evaluate.perplexity]
         dataset="wikitext2"
-        batch_size=1
+        batch_size=2
         num_workers=8
-        max_memory=":ast:{0: '16GB', 1:'16GB', 2:'16GB', 'cpu':'512GB'}"
+        device_map="auto"
     [evaluate.harness_downstream]
-        datasets=["arc_easy", "copa", "lambada_openai", "piqa", "winogrande", "arc_challenge", "boolq", "openbookqa"]
-        # datasets=["lambada_openai", "arc_easy"]
-        batch_size=16
+        batch_size=8
+        datasets=["arc_easy", "lambada_openai", "piqa", "winogrande", "arc_challenge", "boolq", "openbookqa"]
+        device_map="auto"
 
 [profile]
     dataset="slim_pajama_6b"
@@ -34,7 +34,8 @@ model_name="facebook/opt-2.7b"
     num_workers=8
     num_samples=64
     num_raw_samples=4096
-    scale_dict="../../checkpoints/template/opt-2.7b/profile/scale_dict.pt"
+    scale_dict="../../checkpoints/template/tiny-llama-1.1b/profile/scale_dict.pt"
+    device_map="auto"
 
 [approximate]
     name="lqer-act"
@@ -44,16 +45,17 @@ model_name="facebook/opt-2.7b"
     [approximate.lqer_svd]
     [approximate.lqer_act]
     [approximate.approximator]
-        'model\.decoder\.layers\.[0-9]+\.self_attn\.(k|q|v|out)_proj\.weight'="default"
-        'model\.decoder\.layers\.[0-9]+\.(fc1|fc2)\.weight'="default"
+        # 'default' means use the entry named default
+        'model\.layers\.[0-9]+\.self_attn\.(k|q|v|o)_proj\.weight'="default"
+        'model\.layers\.[0-9]+\.mlp\.(gate|down|up)_proj\.weight'="default"
         [approximate.approximator.default]
-            rank=1
+            rank=128
             [approximate.approximator.default.W_quantizer]
                 name="block_fp"
-                width=2
+                width=4
                 exponent_width=8
                 exponent_bias="NA"
-                block_size=[1, 32]
+                block_size=[1, 16]
                 skip_first_dim=false
             [approximate.approximator.default.A_quantizer]
                 name="block_fp"
@@ -69,9 +71,9 @@ model_name="facebook/opt-2.7b"
                 exponent_bias="NA"
                 block_size=[16, 1]
                 skip_first_dim=false
-
+# this should be the same as the ranks in the approximator
 [l_config.linear]
-    rank=1
+    rank=32
 
 [q_config.linear]
     name="flexible_lqer"
@@ -79,42 +81,32 @@ model_name="facebook/opt-2.7b"
     default=false
     [q_config.linear.x_quantizer]
         name="block_fp"
-        width=4
+        width=8
         exponent_width=8
         exponent_bias="NA"
         block_size=[1, 16]
         skip_first_dim=true
+
     [q_config.linear.w_quantizer]
+        # this should be the same as the entry in the approximator
         name="block_fp"
-        width=2
+        width=4
         exponent_width=8
         exponent_bias="NA"
-        block_size=[1, 32]
+        block_size=[1, 16]
         skip_first_dim=false
+
     [q_config.linear.b_quantizer]
         name="block_fp"
         width=8
         exponent_width=8
         exponent_bias="NA"
-        block_size=[1, 16]
+        block_size=[-1]
         skip_first_dim=false
-[q_config.bmm]
-    name="flexible"
-    default=false
-    [q_config.bmm.x_quantizer]
-        name="block_fp"
-        width=8
-        exponent_width=8
-        exponent_bias="NA"
-        block_size=[1, 16]
-        skip_first_dim=true
-    [q_config.bmm.w_quantizer]
-        name="block_fp"
-        width=8
-        exponent_width=8
-        exponent_bias="NA"
-        block_size=[1, 16]
-        skip_first_dim=true
+
+# omit this entry, LinearFlexibleLqer will use the q_config of x_quantizer
+# same rule applies to B_out_quantizer
+# [q_config.linear.A_out_quantizer]
 [q_config.matmul]
     name="flexible"
     default=false
@@ -126,6 +118,24 @@ model_name="facebook/opt-2.7b"
         block_size=[1, 16]
         skip_first_dim=true
     [q_config.matmul.w_quantizer]
+        name="block_fp"
+        width=8
+        exponent_width=8
+        exponent_bias="NA"
+        block_size=[1, 16]
+        skip_first_dim=true
+
+[q_config.bmm]
+    name="flexible"
+    default=false
+    [q_config.bmm.x_quantizer]
+        name="block_fp"
+        width=8
+        exponent_width=8
+        exponent_bias="NA"
+        block_size=[1, 16]
+        skip_first_dim=true
+    [q_config.bmm.w_quantizer]
         name="block_fp"
         width=8
         exponent_width=8

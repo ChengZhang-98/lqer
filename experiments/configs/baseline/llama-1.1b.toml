@@ -1,0 +1,26 @@
+project="template_baseline"
+enable_wandb=false
+enable_perplexity_evaluation=true
+enable_harness_downstream_evaluation=false
+tags=["template", "baseline"]
+model_name="TinyLlama/TinyLlama-1.1B-Chat-v1.0"
+task="causal_lm"
+overwrite_checkpoint=true
+
+[wandb]
+    project="lqer-baselines"
+    job_type="llama-1.1b"
+    tags=[]
+
+[evaluate]
+    evaluate_baseline=true
+    hf_quant_method="fp16"
+    device_map="auto"
+    [evaluate.perplexity]
+        dataset="wikitext2"
+        batch_size=2
+        num_workers=8
+    [evaluate.harness_downstream]
+        no_cache=true
+        datasets=["arc_easy", "lambada_openai", "piqa", "arc_challenge", "boolq", "openbookqa"]
+        batch_size=32
