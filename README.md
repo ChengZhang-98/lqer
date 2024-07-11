@@ -7,7 +7,7 @@
 
 - "Big-little" Llama
 
-  LQER runs a high-rank low-precision GEMM and a group of low-rank high-precision GEMMs in parallel to push the limit of lossless LLM PTQ.
+  LQER runs a high-rank low-precision GEMM and a group of low-rank high-precision GEMMs in parallel to push the limitation of lossless LLM PTQ.
 
 - [DeepWok Lab](https://deepwok.github.io/)
 
